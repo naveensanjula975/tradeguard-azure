@@ -1,24 +1,3 @@
-# TradeGuard Azure MVP
-
-**TradeGuard** is a Python-based, cloud-native trade surveillance and risk-detection platform designed to process simulated trading events in real time, apply rule-based & machine-learning risk scoring, and present suspicious alerts via an investigation dashboard.
-
-## 🏛 Repository Architecture
-
-```text
-tradeguard-azure/
-├── services/
-│   ├── simulator/             # Simulated trading event generator
-│   ├── ingestion-service/     # FastAPI trade event validator & publisher
-│   ├── risk-engine/           # Real-time event consumer & 5 risk rule evaluator
-│   ├── anomaly-service/       # Scikit-learn Isolation Forest ML inference service
-│   └── alert-case-service/    # Alert storage, case investigation & dashboard API
-├── shared/                    # Shared Pydantic contracts, ORM models & logging utilities
-├── frontend/                  # Next.js & TypeScript compliance investigation dashboard
-├── ml/                        # Dataset generation & model training scripts
-├── infrastructure/            # Terraform manifests for Azure resources
-└── tests/                     # Unit and integration test suites
-```
-
 ## 🚀 Quick Start (Local Setup)
 
 ### Prerequisites

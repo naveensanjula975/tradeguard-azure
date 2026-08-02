@@ -62,3 +62,4 @@ ml/models/*.pkl
 .DS_Store
 *.swp
 *.swo
+*.md
