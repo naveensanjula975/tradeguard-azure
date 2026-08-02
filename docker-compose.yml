@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tradeguard-db
+    environment:
+      POSTGRES_DB: tradeguard
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  ingestion-service:
+    build:
+      context: .
+      dockerfile: services/ingestion-service/Dockerfile
+    container_name: tradeguard-ingestion
+    environment:
+      - ENVIRONMENT=development
+      - PORT=8001
+      - DATABASE_URL=postgresql+psycopg2://postgres:postgres_password@postgres:5432/tradeguard
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  anomaly-service:
+    build:
+      context: .
+      dockerfile: services/anomaly-service/Dockerfile
+    container_name: tradeguard-anomaly
+    environment:
+      - ENVIRONMENT=development
+      - PORT=8002
+    ports:
+      - "8002:8002"
+
+  alert-case-service:
+    build:
+      context: .
+      dockerfile: services/alert-case-service/Dockerfile
+    container_name: tradeguard-alert-case
+    environment:
+      - ENVIRONMENT=development
+      - PORT=8003
+      - DATABASE_URL=postgresql+psycopg2://postgres:postgres_password@postgres:5432/tradeguard
+    ports:
+      - "8003:8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  risk-engine:
+    build:
+      context: .
+      dockerfile: services/risk-engine/Dockerfile
+    container_name: tradeguard-risk-engine
+    environment:
+      - ENVIRONMENT=development
+      - ANOMALY_SERVICE_URL=http://anomaly-service:8002
+      - DATABASE_URL=postgresql+psycopg2://postgres:postgres_password@postgres:5432/tradeguard
+    depends_on:
+      - postgres
+      - anomaly-service
+
+  simulator:
+    build:
+      context: .
+      dockerfile: services/simulator/Dockerfile
+    container_name: tradeguard-simulator
+    environment:
+      - INGESTION_SERVICE_URL=http://ingestion-service:8001
+    ports:
+      - "8004:8004"
+    depends_on:
+      - ingestion-service
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tradeguard-frontend
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8003
+    ports:
+      - "3000:3000"
+    depends_on:
+      - alert-case-service
+
+volumes:
+  pgdata:
