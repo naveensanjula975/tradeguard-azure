@@ -5,6 +5,10 @@ from .rapid_cancellation import RapidCancellationRule
 from .trading_frequency import ExcessiveTradingFrequencyRule
 from .unusual_volume import UnusualVolumeRule
 from .new_device_high_value import NewDeviceHighValueRule
+from .wash_trading import WashTradingRule
+from .spoofing_layering import SpoofingLayeringRule
+from .off_hours_trading import OffHoursTradingRule
+from .price_spike import PriceSpikeRule
 
 ALL_RULES = [
     LargeOrderRule(),
@@ -12,6 +16,10 @@ ALL_RULES = [
     ExcessiveTradingFrequencyRule(),
     UnusualVolumeRule(),
     NewDeviceHighValueRule(),
+    WashTradingRule(),
+    SpoofingLayeringRule(),
+    OffHoursTradingRule(),
+    PriceSpikeRule(),
 ]
 
 __all__ = [
@@ -21,5 +29,9 @@ __all__ = [
     "ExcessiveTradingFrequencyRule",
     "UnusualVolumeRule",
     "NewDeviceHighValueRule",
+    "WashTradingRule",
+    "SpoofingLayeringRule",
+    "OffHoursTradingRule",
+    "PriceSpikeRule",
     "ALL_RULES",
 ]

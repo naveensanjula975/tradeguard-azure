@@ -19,6 +19,3 @@ docker-compose up --build
 ```bash
 pytest tests/
 ```
-
-## 📜 MVP Specification
-For full technical specifications, database schema models, risk rules, and demonstration workflows, see [mvp.md](mvp.md).
