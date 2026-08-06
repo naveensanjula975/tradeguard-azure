@@ -3,7 +3,8 @@ from datetime import datetime, timezone
 from typing import Optional, Tuple
 from shared.event_contracts import TradeEvent, AlertEvent
 from shared.schemas import AlertSeverity
-from services.risk-engine.src.rules import ALL_RULES
+from .rules import ALL_RULES
+
 
 def calculate_severity(risk_score: float) -> AlertSeverity:
     if risk_score >= 80.0:
@@ -14,6 +15,7 @@ def calculate_severity(risk_score: float) -> AlertSeverity:
         return AlertSeverity.MEDIUM
     else:
         return AlertSeverity.LOW
+
 
 class RiskEvaluator:
     def __init__(self):
@@ -54,5 +56,6 @@ class RiskEvaluator:
             severity=severity,
             detected_at=datetime.now(timezone.utc)
         )
+
 
 evaluator = RiskEvaluator()

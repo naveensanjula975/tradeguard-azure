@@ -1,7 +1,7 @@
 from typing import Optional, Tuple
 from shared.event_contracts import TradeEvent
 from shared.schemas import AlertSeverity
-from services.risk-engine.src.rules.base import BaseRiskRule
+from .base import BaseRiskRule
 
 class UnusualVolumeRule(BaseRiskRule):
     code = "UNUSUAL_VOLUME"

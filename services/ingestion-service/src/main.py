@@ -5,10 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from shared.schemas import HealthResponse
 from shared.observability import setup_logger
 from shared.database.connection import engine
-from shared.database import models  # noqa: F401
 from shared.database.models import Base
-from services.ingestion_service.src.config import settings
-from services.ingestion_service.src.api.v1.events import router as events_router
+from .config import settings
+from .api.v1.events import router as events_router
 
 logger = setup_logger("ingestion-service")
 
@@ -41,9 +40,4 @@ def health():
 
 
 if __name__ == "__main__":
-    uvicorn.run(
-        "services.ingestion_service.src.main:app",
-        host=settings.HOST,
-        port=settings.PORT,
-        reload=True,
-    )
+    uvicorn.run("main:app", host=settings.HOST, port=settings.PORT, reload=True)

@@ -3,6 +3,7 @@ from typing import Optional, Tuple
 from shared.event_contracts import TradeEvent
 from shared.schemas import AlertSeverity
 
+
 class BaseRiskRule(ABC):
     code: str
     name: str

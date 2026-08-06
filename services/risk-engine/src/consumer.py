@@ -1,8 +1,8 @@
 import httpx
 from shared.event_contracts import TradeEvent
 from shared.observability import setup_logger
-from services.risk_engine.src.evaluator import evaluator
-from services.risk_engine.src.config import settings
+from .evaluator import evaluator
+from .config import settings
 
 logger = setup_logger("risk-engine-consumer")
 
@@ -12,9 +12,9 @@ class EventConsumer:
         """Call the anomaly service to get an ML anomaly score for this event."""
         features = {
             "order_value": event.order_value,
-            "orders_per_minute": 1.0,        # In a real pipeline this would be computed from a window
-            "cancellation_rate": 0.0,         # Would come from trader session context
-            "volume_ratio": 1.0,              # Relative to 30-day average
+            "orders_per_minute": 1.0,
+            "cancellation_rate": 0.0,
+            "volume_ratio": 1.0,
             "instruments_traded": 1,
             "hour_of_activity": event.timestamp.hour,
             "is_new_device": int(event.is_new_device or False),
@@ -26,8 +26,7 @@ class EventConsumer:
                 timeout=5.0,
             )
             resp.raise_for_status()
-            data = resp.json()
-            return float(data.get("anomaly_score", 0.0))
+            return float(resp.json().get("anomaly_score", 0.0))
         except Exception as e:
             logger.warning(f"Anomaly service unavailable for event {event.event_id}: {e} — using score 0.0")
             return 0.0
@@ -47,7 +46,7 @@ class EventConsumer:
             return False
 
     def process_event(self, event: TradeEvent) -> dict | None:
-        """Evaluate a trade event: get ML score, apply rules, forward alert if triggered."""
+        """Evaluate a trade event, get ML score, apply rules, forward alert if triggered."""
         logger.info(f"Consuming trade event {event.event_id} for trader {event.trader_id}")
 
         anomaly_score = self._get_anomaly_score(event)

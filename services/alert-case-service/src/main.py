@@ -5,13 +5,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from shared.schemas import HealthResponse
 from shared.observability import setup_logger
 from shared.database.connection import engine
-from shared.database import models  # noqa: F401 — ensures all ORM models are registered
 from shared.database.models import Base
-from services.alert_case_service.src.config import settings
-from services.alert_case_service.src.api.v1.alerts import router as alerts_router
-from services.alert_case_service.src.api.v1.notes import router as notes_router
-from services.alert_case_service.src.api.v1.rules import router as rules_router
-from services.alert_case_service.src.api.v1.dashboard import router as dashboard_router
+from .config import settings
+from .api.v1.alerts import router as alerts_router
+from .api.v1.notes import router as notes_router
+from .api.v1.rules import router as rules_router
+from .api.v1.dashboard import router as dashboard_router
 
 logger = setup_logger("alert-case-service")
 
@@ -47,9 +46,4 @@ def health():
 
 
 if __name__ == "__main__":
-    uvicorn.run(
-        "services.alert_case_service.src.main:app",
-        host=settings.HOST,
-        port=settings.PORT,
-        reload=True,
-    )
+    uvicorn.run("main:app", host=settings.HOST, port=settings.PORT, reload=True)

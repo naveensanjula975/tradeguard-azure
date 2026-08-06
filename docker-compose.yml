@@ -18,21 +18,6 @@ services:
       timeout: 5s
       retries: 5
 
-  ingestion-service:
-    build:
-      context: .
-      dockerfile: services/ingestion-service/Dockerfile
-    container_name: tradeguard-ingestion
-    environment:
-      - ENVIRONMENT=development
-      - PORT=8001
-      - DATABASE_URL=postgresql+psycopg2://postgres:postgres_password@postgres:5432/tradeguard
-    ports:
-      - "8001:8001"
-    depends_on:
-      postgres:
-        condition: service_healthy
-
   anomaly-service:
     build:
       context: .
@@ -41,8 +26,45 @@ services:
     environment:
       - ENVIRONMENT=development
       - PORT=8002
+      - HOST=0.0.0.0
+      - MODEL_PATH=ml/models/isolation_forest_v1.joblib
     ports:
       - "8002:8002"
+
+  risk-engine:
+    build:
+      context: .
+      dockerfile: services/risk-engine/Dockerfile
+    container_name: tradeguard-risk-engine
+    environment:
+      - ENVIRONMENT=development
+      - PORT=8005
+      - HOST=0.0.0.0
+      - ANOMALY_SERVICE_URL=http://anomaly-service:8002
+      - ALERT_CASE_SERVICE_URL=http://alert-case-service:8003
+    ports:
+      - "8005:8005"
+    depends_on:
+      - anomaly-service
+
+  ingestion-service:
+    build:
+      context: .
+      dockerfile: services/ingestion-service/Dockerfile
+    container_name: tradeguard-ingestion
+    environment:
+      - ENVIRONMENT=development
+      - PORT=8001
+      - HOST=0.0.0.0
+      - DATABASE_URL=postgresql+psycopg2://postgres:postgres_password@postgres:5432/tradeguard
+      - RISK_ENGINE_URL=http://risk-engine:8005
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      risk-engine:
+        condition: service_started
 
   alert-case-service:
     build:
@@ -52,25 +74,13 @@ services:
     environment:
       - ENVIRONMENT=development
       - PORT=8003
+      - HOST=0.0.0.0
       - DATABASE_URL=postgresql+psycopg2://postgres:postgres_password@postgres:5432/tradeguard
     ports:
       - "8003:8003"
     depends_on:
       postgres:
         condition: service_healthy
-
-  risk-engine:
-    build:
-      context: .
-      dockerfile: services/risk-engine/Dockerfile
-    container_name: tradeguard-risk-engine
-    environment:
-      - ENVIRONMENT=development
-      - ANOMALY_SERVICE_URL=http://anomaly-service:8002
-      - DATABASE_URL=postgresql+psycopg2://postgres:postgres_password@postgres:5432/tradeguard
-    depends_on:
-      - postgres
-      - anomaly-service
 
   simulator:
     build:
@@ -79,6 +89,8 @@ services:
     container_name: tradeguard-simulator
     environment:
       - INGESTION_SERVICE_URL=http://ingestion-service:8001
+      - PORT=8004
+      - HOST=0.0.0.0
     ports:
       - "8004:8004"
     depends_on:

@@ -1,5 +1,5 @@
 """Alert API — full DB-backed CRUD for risk alerts."""
-from typing import Optional, List
+from typing import Optional
 from fastapi import APIRouter, HTTPException, Query, Depends, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -7,8 +7,8 @@ from shared.schemas import AlertSeverity, AlertStatus
 from shared.database.connection import get_db
 from shared.database.models import AlertRecord
 from shared.event_contracts import AlertEvent
-from services.alert_case_service.src.services.alert_processor import alert_processor
-from services.alert_case_service.src.services.case_manager import case_manager
+from ...services.alert_processor import alert_processor
+from ...services.case_manager import case_manager
 
 router = APIRouter(prefix="/api/v1/alerts", tags=["Alerts"])
 
@@ -21,11 +21,6 @@ class AssignRequest(BaseModel):
     analyst_id: str
 
 
-class IngestAlertRequest(BaseModel):
-    """Internal endpoint — receives a raw AlertEvent from the risk engine."""
-    alert: dict
-
-
 @router.get("")
 def list_alerts(
     severity: Optional[AlertSeverity] = None,
@@ -36,9 +31,8 @@ def list_alerts(
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
 ):
-    """List alerts with optional filters for severity, status, trader, and rule."""
+    """List alerts with optional filters for severity, status, trader, and rule code."""
     query = db.query(AlertRecord)
-
     if severity:
         query = query.filter(AlertRecord.severity == severity.value)
     if status_filter:
@@ -55,13 +49,7 @@ def list_alerts(
         .limit(limit)
         .all()
     )
-
-    return {
-        "total": total,
-        "items": [r.to_dict() for r in items],
-        "limit": limit,
-        "offset": offset,
-    }
+    return {"total": total, "items": [r.to_dict() for r in items], "limit": limit, "offset": offset}
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -73,7 +61,6 @@ def ingest_alert(event: AlertEvent, db: Session = Depends(get_db)):
 
 @router.get("/{alert_id}")
 def get_alert(alert_id: str, db: Session = Depends(get_db)):
-    """Fetch a single alert by its alert_id."""
     record = db.query(AlertRecord).filter(AlertRecord.alert_id == alert_id).first()
     if not record:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Alert {alert_id} not found")
@@ -82,7 +69,6 @@ def get_alert(alert_id: str, db: Session = Depends(get_db)):
 
 @router.patch("/{alert_id}/status")
 def update_alert_status(alert_id: str, req: StatusUpdateRequest, db: Session = Depends(get_db)):
-    """Update the workflow status of an alert (e.g. NEW → UNDER_REVIEW → CONFIRMED)."""
     record = case_manager.update_status(alert_id, req.status, db)
     if not record:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Alert {alert_id} not found")
@@ -91,7 +77,6 @@ def update_alert_status(alert_id: str, req: StatusUpdateRequest, db: Session = D
 
 @router.patch("/{alert_id}/assign")
 def assign_alert(alert_id: str, req: AssignRequest, db: Session = Depends(get_db)):
-    """Assign an alert to an analyst."""
     record = case_manager.assign_alert(alert_id, req.analyst_id, db)
     if not record:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Alert {alert_id} not found")

@@ -1,7 +1,7 @@
 from typing import Optional, Tuple
 from shared.event_contracts import TradeEvent
 from shared.schemas import AlertSeverity, EventType
-from services.risk-engine.src.rules.base import BaseRiskRule
+from .base import BaseRiskRule
 
 class SpoofingLayeringRule(BaseRiskRule):
     code = "SPOOFING_LAYERING"
