@@ -1,9 +1,10 @@
 import './globals.css';
-import Link from 'next/link';
+import type { Metadata } from 'next';
+import NavLink from './NavLink';
 
-export const metadata = {
-  title: 'TradeGuard - Trade Surveillance & Risk Platform',
-  description: 'Real-time trade risk detection and investigation dashboard',
+export const metadata: Metadata = {
+  title: 'TradeGuard — Trade Surveillance & Risk Platform',
+  description: 'Real-time trade risk detection, ML anomaly scoring, and compliance investigation dashboard',
 };
 
 export default function RootLayout({
@@ -16,12 +17,13 @@ export default function RootLayout({
       <body>
         <header className="header">
           <div className="logo">
-            🛡️ TradeGuard Azure
+            <div className="logo-shield">🛡</div>
+            TradeGuard Azure
           </div>
           <nav className="nav">
-            <Link href="/" className="nav-link">Dashboard</Link>
-            <Link href="/alerts" className="nav-link">Alerts</Link>
-            <Link href="/rules" className="nav-link">Risk Rules</Link>
+            <NavLink href="/">Dashboard</NavLink>
+            <NavLink href="/alerts">Alerts</NavLink>
+            <NavLink href="/rules">Risk Rules</NavLink>
           </nav>
         </header>
         <main className="container">

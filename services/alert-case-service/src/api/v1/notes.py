@@ -1,22 +1,40 @@
-from fastapi import APIRouter, status
+"""Investigation Notes API — create and list analyst notes per alert."""
+from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from shared.database.connection import get_db
+from shared.database.models import AlertRecord
+from services.alert_case_service.src.services.case_manager import case_manager
 
 router = APIRouter(prefix="/api/v1/alerts/{alert_id}/notes", tags=["Investigation Notes"])
+
 
 class CreateNoteRequest(BaseModel):
     author_id: str
     note: str
 
+
 @router.get("")
-def list_notes(alert_id: str):
-    return {"alert_id": alert_id, "notes": []}
+def list_notes(alert_id: str, db: Session = Depends(get_db)):
+    """List all investigation notes for a given alert."""
+    # Verify the alert exists
+    record = db.query(AlertRecord).filter(AlertRecord.alert_id == alert_id).first()
+    if not record:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Alert {alert_id} not found")
+
+    notes = case_manager.list_notes(alert_id, db)
+    return {
+        "alert_id": alert_id,
+        "notes": [n.to_dict() for n in notes],
+    }
+
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-def create_note(alert_id: str, req: CreateNoteRequest):
-    return {
-        "id": 1,
-        "alert_id": alert_id,
-        "author_id": req.author_id,
-        "note": req.note,
-        "status": "created"
-    }
+def create_note(alert_id: str, req: CreateNoteRequest, db: Session = Depends(get_db)):
+    """Add an investigation note to an alert."""
+    record = db.query(AlertRecord).filter(AlertRecord.alert_id == alert_id).first()
+    if not record:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Alert {alert_id} not found")
+
+    note = case_manager.add_note(alert_id, req.author_id, req.note, db)
+    return note.to_dict()
