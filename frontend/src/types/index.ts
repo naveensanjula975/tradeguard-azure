@@ -33,3 +33,14 @@ export interface RiskRule {
   severity: AlertSeverity;
   enabled: boolean;
 }
+
+export interface AuditLog {
+  id: number;
+  user_id: string;
+  entity_type: string;
+  entity_id: string;
+  action: string;
+  old_value?: string;
+  new_value?: string;
+  created_at: string;
+}

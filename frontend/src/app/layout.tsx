@@ -24,6 +24,7 @@ export default function RootLayout({
             <NavLink href="/">Dashboard</NavLink>
             <NavLink href="/alerts">Alerts</NavLink>
             <NavLink href="/rules">Risk Rules</NavLink>
+            <NavLink href="/audit">Audit Trail</NavLink>
           </nav>
         </header>
         <main className="container">
