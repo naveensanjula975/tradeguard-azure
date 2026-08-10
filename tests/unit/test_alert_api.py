@@ -41,3 +41,19 @@ def test_get_alert_not_found():
 
     assert response.status_code == 404
     assert "not found" in response.json()["detail"]
+
+def test_list_audit_logs_empty():
+    mock_db = MagicMock()
+    mock_db.query.return_value.count.return_value = 0
+    mock_db.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = []
+
+    app.dependency_overrides[get_db] = lambda: mock_db
+
+    response = client.get("/api/v1/audit-logs")
+
+    app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total"] == 0
+    assert data["items"] == []

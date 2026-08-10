@@ -51,14 +51,31 @@ def list_risk_rules(db: Session = Depends(get_db)):
     ]
 
 
+from .audit_logs import log_audit_event
+
+
 @router.patch("/{rule_code}")
 def update_risk_rule(rule_code: str, req: UpdateRuleRequest, db: Session = Depends(get_db)):
     """Update a risk rule's threshold and enabled flag by rule code."""
     rule = db.query(RiskRuleModel).filter(RiskRuleModel.code == rule_code).first()
     if not rule:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Rule '{rule_code}' not found")
+    
+    old_val = f"threshold={rule.threshold}, enabled={rule.enabled}"
     rule.threshold = req.threshold
     rule.enabled = req.enabled
     db.commit()
     db.refresh(rule)
+    new_val = f"threshold={rule.threshold}, enabled={rule.enabled}"
+
+    log_audit_event(
+        db=db,
+        user_id="ANALYST-SYSTEM",
+        entity_type="RISK_RULE",
+        entity_id=rule_code,
+        action="UPDATE_RULE",
+        old_value=old_val,
+        new_value=new_val,
+    )
+
     return {"code": rule.code, "name": rule.name, "threshold": rule.threshold, "severity": rule.severity, "enabled": rule.enabled}

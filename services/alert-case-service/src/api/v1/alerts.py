@@ -67,17 +67,46 @@ def get_alert(alert_id: str, db: Session = Depends(get_db)):
     return record.to_dict()
 
 
+from .audit_logs import log_audit_event
+
+
 @router.patch("/{alert_id}/status")
 def update_alert_status(alert_id: str, req: StatusUpdateRequest, db: Session = Depends(get_db)):
+    old_record = db.query(AlertRecord).filter(AlertRecord.alert_id == alert_id).first()
+    old_status = old_record.status if old_record else None
+
     record = case_manager.update_status(alert_id, req.status, db)
     if not record:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Alert {alert_id} not found")
+
+    log_audit_event(
+        db=db,
+        user_id="ANALYST-SYSTEM",
+        entity_type="ALERT",
+        entity_id=alert_id,
+        action="UPDATE_STATUS",
+        old_value=old_status,
+        new_value=req.status.value,
+    )
     return {"alert_id": alert_id, "new_status": record.status}
 
 
 @router.patch("/{alert_id}/assign")
 def assign_alert(alert_id: str, req: AssignRequest, db: Session = Depends(get_db)):
+    old_record = db.query(AlertRecord).filter(AlertRecord.alert_id == alert_id).first()
+    old_assigned = old_record.assigned_to if old_record else None
+
     record = case_manager.assign_alert(alert_id, req.analyst_id, db)
     if not record:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Alert {alert_id} not found")
+
+    log_audit_event(
+        db=db,
+        user_id=req.analyst_id,
+        entity_type="ALERT",
+        entity_id=alert_id,
+        action="ASSIGN_ANALYST",
+        old_value=old_assigned,
+        new_value=req.analyst_id,
+    )
     return {"alert_id": alert_id, "assigned_to": record.assigned_to}

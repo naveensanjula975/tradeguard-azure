@@ -10,11 +10,14 @@ from .models import (
     AuditLogModel,
 )
 
+from .seed import seed_database
+
 __all__ = [
     "Base",
     "engine",
     "SessionLocal",
     "get_db",
+    "seed_database",
     "Trader",
     "TradingAccount",
     "TradeEventRecord",
