@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import NavLink from './NavLink';
+import ServiceHealthWidget from './ServiceHealthWidget';
 
 export const metadata: Metadata = {
   title: 'TradeGuard — Trade Surveillance & Risk Platform',
@@ -14,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <header className="header">
           <div className="logo">
             <div className="logo-shield">🛡</div>
@@ -25,11 +26,13 @@ export default function RootLayout({
             <NavLink href="/alerts">Alerts</NavLink>
             <NavLink href="/rules">Risk Rules</NavLink>
             <NavLink href="/audit">Audit Trail</NavLink>
+            <NavLink href="/simulator">Simulator</NavLink>
           </nav>
         </header>
-        <main className="container">
+        <main className="container" style={{ flex: 1 }}>
           {children}
         </main>
+        <ServiceHealthWidget />
       </body>
     </html>
   );

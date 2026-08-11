@@ -37,6 +37,29 @@ export default function AuditLogsPage() {
     load();
   }, [load]);
 
+  const handleExportCSV = () => {
+    if (logs.length === 0) return;
+    const headers = ['Log ID', 'User ID', 'Entity Type', 'Entity ID', 'Action', 'Old Value', 'New Value', 'Timestamp'];
+    const rows = logs.map(l => [
+      l.id,
+      l.user_id,
+      l.entity_type,
+      l.entity_id,
+      l.action,
+      `"${(l.old_value || '').replace(/"/g, '""')}"`,
+      `"${(l.new_value || '').replace(/"/g, '""')}"`,
+      `"${new Date(l.created_at).toLocaleString()}"`,
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `tradeguard_audit_logs_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div>
       {/* Page Header */}
@@ -72,6 +95,15 @@ export default function AuditLogsPage() {
           onClick={() => { setEntityTypeFilter(''); setUserIdFilter(''); setOffset(0); }}
         >
           Clear
+        </button>
+
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={handleExportCSV}
+          disabled={logs.length === 0}
+          title="Export audit logs as CSV"
+        >
+          📥 Export CSV
         </button>
 
         <div style={{ marginLeft: 'auto', fontSize: '0.8rem', color: 'var(--text-muted)' }}>

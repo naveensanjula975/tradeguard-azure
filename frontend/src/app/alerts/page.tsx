@@ -316,6 +316,29 @@ export default function AlertsPage() {
 
   const handleFilterChange = () => { setOffset(0); };
 
+  const handleExportCSV = () => {
+    if (alerts.length === 0) return;
+    const headers = ['Alert ID', 'Trader ID', 'Rule Code', 'Title', 'Risk Score', 'Severity', 'Status', 'Detected At'];
+    const rows = alerts.map(a => [
+      a.alert_id,
+      a.trader_id,
+      a.rule_code,
+      `"${a.title.replace(/"/g, '""')}"`,
+      a.final_risk_score,
+      a.severity,
+      a.status,
+      `"${new Date(a.detected_at).toLocaleString()}"`,
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `tradeguard_alerts_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div>
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
@@ -371,6 +394,15 @@ export default function AlertsPage() {
           onClick={() => { setSeverityFilter(''); setStatusFilter(''); setTraderFilter(''); setOffset(0); }}
         >
           Clear
+        </button>
+
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={handleExportCSV}
+          disabled={alerts.length === 0}
+          title="Export current alerts as CSV"
+        >
+          📥 Export CSV
         </button>
 
         <div style={{ marginLeft: 'auto', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
