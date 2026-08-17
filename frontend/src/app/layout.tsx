@@ -27,6 +27,7 @@ export default function RootLayout({
             <NavLink href="/rules">Risk Rules</NavLink>
             <NavLink href="/audit">Audit Trail</NavLink>
             <NavLink href="/simulator">Simulator</NavLink>
+            <NavLink href="/users">Users &amp; Roles</NavLink>
           </nav>
         </header>
         <main className="container" style={{ flex: 1 }}>
