@@ -28,6 +28,7 @@ export default function RootLayout({
             <NavLink href="/audit">Audit Trail</NavLink>
             <NavLink href="/simulator">Simulator</NavLink>
             <NavLink href="/watchlist">Watchlist</NavLink>
+            <NavLink href="/codegen">Code Gen</NavLink>
           </nav>
         </header>
         <main className="container" style={{ flex: 1 }}>
