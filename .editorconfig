@@ -1,0 +1,36 @@
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+
+# Python
+[*.py]
+indent_size = 4
+max_line_length = 100
+
+# TypeScript / JavaScript / JSON
+[*.{ts,tsx,js,jsx,json}]
+indent_size = 2
+
+# YAML (GitHub Actions, Docker Compose, etc.)
+[*.{yml,yaml}]
+indent_size = 2
+
+# Terraform
+[*.tf]
+indent_size = 2
+
+# Markdown — preserve trailing whitespace (intentional line breaks)
+[*.md]
+trim_trailing_whitespace = false
+max_line_length = off
+
+# Makefiles require tabs
+[Makefile]
+indent_style = tab
+
+# Shell scripts
+[*.sh]
+indent_size = 2

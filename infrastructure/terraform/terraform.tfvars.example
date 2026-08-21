@@ -1,0 +1,27 @@
+# terraform.tfvars.example
+#
+# Copy this file to terraform.tfvars for local plan/apply.
+# NEVER commit terraform.tfvars to source control — it is git-ignored.
+#
+# For CI/CD, supply these values via:
+#   - GitHub Actions secrets → TF_VAR_* environment variables
+#   - Azure DevOps pipeline variables
+#   - Terraform Cloud workspace variables
+
+# ─── Core ────────────────────────────────────────────────
+environment         = "staging"
+location            = "eastus"
+resource_group_name = "rg-tradeguard-staging"
+
+# ─── Azure Identity ───────────────────────────────────────
+# Your Azure Tenant & Subscription IDs
+tenant_id = "00000000-0000-0000-0000-000000000000"
+
+# ─── Database ────────────────────────────────────────────
+db_admin_username = "tradeguard_admin"
+# Use a strong randomly-generated password (min 16 chars, mixed case + symbols)
+db_admin_password = "REPLACE_WITH_STRONG_PASSWORD"
+
+# ─── Container Registry ──────────────────────────────────
+# GitHub Container Registry org (ghcr.io/<org>/<image>)
+container_registry_org = "your-github-org"
