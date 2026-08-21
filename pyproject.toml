@@ -1,0 +1,135 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "tradeguard"
+version = "0.3.0"
+description = "TradeGuard Azure — real-time trade surveillance platform"
+requires-python = ">=3.12"
+authors = [
+  { name = "TradeGuard Team", email = "dev@tradeguard.example.com" }
+]
+license = { text = "Proprietary" }
+
+# ─────────────────────────────────────────────────────────
+# Ruff — formatter + linter (replaces Black + Flake8 + isort)
+# ─────────────────────────────────────────────────────────
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["services", "shared", "ml", "tests"]
+
+[tool.ruff.lint]
+select = [
+  "E",    # pycodestyle errors
+  "W",    # pycodestyle warnings
+  "F",    # pyflakes
+  "I",    # isort
+  "N",    # pep8-naming
+  "UP",   # pyupgrade
+  "S",    # bandit (security)
+  "B",    # flake8-bugbear
+  "A",    # flake8-builtins
+  "C4",   # flake8-comprehensions
+  "T20",  # flake8-print (no bare print statements)
+  "RUF",  # ruff-specific rules
+]
+ignore = [
+  "S101",  # allow assert in tests
+  "S603",  # subprocess call — allowed in scripts
+  "B008",  # FastAPI Depends() pattern
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "S106", "T20"]
+"scripts/**/*.py" = ["T20"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["shared"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+# ─────────────────────────────────────────────────────────
+# MyPy — static type checking
+# ─────────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+exclude = [
+  "tests/",
+  "scripts/",
+  ".venv/",
+]
+
+[[tool.mypy.overrides]]
+module = [
+  "sklearn.*",
+  "joblib.*",
+  "azure.*",
+]
+ignore_missing_imports = true
+
+# ─────────────────────────────────────────────────────────
+# Pytest — test configuration
+# ─────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = [
+  "--strict-markers",
+  "--tb=short",
+  "-q",
+]
+markers = [
+  "unit: pure unit tests (no external dependencies)",
+  "integration: tests requiring Docker services",
+  "slow: tests that take > 5 seconds",
+  "security: security-related tests",
+]
+filterwarnings = [
+  "error",
+  "ignore::DeprecationWarning:pkg_resources",
+]
+
+# ─────────────────────────────────────────────────────────
+# Coverage
+# ─────────────────────────────────────────────────────────
+[tool.coverage.run]
+source = ["services", "shared"]
+omit = [
+  "*/tests/*",
+  "*/migrations/*",
+  "*/__init__.py",
+  "*/seed.py",
+]
+branch = true
+
+[tool.coverage.report]
+fail_under = 75
+show_missing = true
+skip_covered = false
+exclude_lines = [
+  "pragma: no cover",
+  "if TYPE_CHECKING:",
+  "raise NotImplementedError",
+  "if __name__ == .__main__.:",
+]
+
+# ─────────────────────────────────────────────────────────
+# Bandit — security linting
+# ─────────────────────────────────────────────────────────
+[tool.bandit]
+targets = ["services", "shared"]
+skips = ["B101"]  # allow assert
+severity = "medium"
+confidence = "medium"
