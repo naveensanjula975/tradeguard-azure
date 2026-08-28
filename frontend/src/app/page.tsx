@@ -1,5 +1,7 @@
-import { fetchDashboardSummary, fetchRecentAlerts, fetchHighRiskTraders } from '../lib/api';
+import { fetchDashboardSummary, fetchRecentAlerts, fetchHighRiskTraders, fetchAlertTrends } from '../lib/api';
 import { DashboardSummary, Alert } from '../types';
+
+// ─── Utility helpers ─────────────────────────────────────────────────────────
 
 function severityBadgeClass(severity: string) {
   const map: Record<string, string> = {
@@ -22,6 +24,26 @@ function statusBadgeClass(status: string) {
   };
   return `badge ${map[status] || ''}`;
 }
+
+function scoreClass(score: number) {
+  if (score >= 80) return 'score-critical';
+  if (score >= 60) return 'score-high';
+  if (score >= 40) return 'score-medium';
+  return 'score-low';
+}
+
+function timeAgo(iso?: string): string {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function RiskBar({ score, severity }: { score: number; severity: string }) {
   const cls = severity.toLowerCase();
@@ -54,17 +76,215 @@ function MetricCard({
   );
 }
 
+// ─── Widget: Alert Severity Donut ─────────────────────────────────────────────
+
+const SEVERITY_CONFIG = [
+  { key: 'CRITICAL', color: '#f43f5e', label: 'Critical' },
+  { key: 'HIGH',     color: '#f59e0b', label: 'High' },
+  { key: 'MEDIUM',   color: '#38bdf8', label: 'Medium' },
+  { key: 'LOW',      color: '#10b981', label: 'Low' },
+];
+
+function SeverityDonut({ bySeverity }: { bySeverity: Record<string, number> }) {
+  const total = SEVERITY_CONFIG.reduce((s, c) => s + (bySeverity[c.key] ?? 0), 0);
+  const R = 60;
+  const cx = 80;
+  const cy = 80;
+  const stroke = 20;
+  const circumference = 2 * Math.PI * R;
+
+  let offset = 0;
+  const segments = SEVERITY_CONFIG.map((c) => {
+    const count = bySeverity[c.key] ?? 0;
+    const pct = total > 0 ? count / total : 0;
+    const dash = pct * circumference;
+    const gap  = circumference - dash;
+    const seg  = { ...c, count, dash, gap, offset };
+    offset += dash;
+    return seg;
+  });
+
+  return (
+    <div className="donut-chart-wrap">
+      <svg viewBox="0 0 160 160" className="donut-svg">
+        <circle
+          cx={cx} cy={cy} r={R}
+          fill="none"
+          stroke="rgba(255,255,255,0.04)"
+          strokeWidth={stroke}
+        />
+        {total > 0 ? segments.map((seg) => (
+          <circle
+            key={seg.key}
+            className="donut-segment"
+            cx={cx} cy={cy} r={R}
+            fill="none"
+            stroke={seg.color}
+            strokeWidth={stroke}
+            strokeDasharray={`${seg.dash} ${seg.gap}`}
+            strokeDashoffset={-seg.offset + circumference * 0.25}
+            strokeLinecap="butt"
+            style={{ filter: `drop-shadow(0 0 4px ${seg.color}60)` }}
+          />
+        )) : (
+          <circle
+            cx={cx} cy={cy} r={R}
+            fill="none"
+            stroke="rgba(255,255,255,0.06)"
+            strokeWidth={stroke}
+          />
+        )}
+        <text x={cx} y={cy - 8} textAnchor="middle" className="donut-center-label">
+          {total}
+        </text>
+        <text x={cx} y={cy + 12} textAnchor="middle" className="donut-center-sub">
+          Total Alerts
+        </text>
+      </svg>
+      <div className="donut-legend">
+        {SEVERITY_CONFIG.map((c) => (
+          <div key={c.key} className="donut-legend-item">
+            <span className="donut-legend-dot" style={{ background: c.color }} />
+            <span>{c.label}</span>
+            <span className="donut-legend-count">{bySeverity[c.key] ?? 0}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Widget: Top Triggered Rules ─────────────────────────────────────────────
+
+function RuleBarChart({ byRule }: { byRule: Record<string, number> }) {
+  const entries = Object.entries(byRule).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const max = entries[0]?.[1] ?? 1;
+
+  if (entries.length === 0) {
+    return (
+      <div className="empty-state">
+        <div className="empty-state-icon">📊</div>
+        <div className="empty-state-text">No rule data yet.</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rule-bar-list">
+      {entries.map(([rule, count]) => (
+        <div key={rule} className="rule-bar-item">
+          <div className="rule-bar-meta">
+            <span className="rule-bar-name" title={rule}>{rule.replace(/_/g, ' ')}</span>
+            <span className="rule-bar-count">{count}</span>
+          </div>
+          <div className="rule-bar-track">
+            <div className="rule-bar-fill" style={{ width: `${(count / max) * 100}%` }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Widget: Live Activity Feed ───────────────────────────────────────────────
+
+function ActivityFeed({ alerts }: { alerts: Alert[] }) {
+  if (alerts.length === 0) {
+    return (
+      <div className="empty-state">
+        <div className="empty-state-icon">📭</div>
+        <div className="empty-state-text">No recent activity.</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="activity-feed">
+      {alerts.map((alert, i) => (
+        <div key={alert.alert_id} className="activity-item" style={{ animationDelay: `${i * 0.05}s` }}>
+          <div className="activity-timeline">
+            <span className={`activity-dot ${alert.severity.toLowerCase()}`} />
+            {i < alerts.length - 1 && <span className="activity-line" />}
+          </div>
+          <div className="activity-body">
+            <div className="activity-title">{alert.title}</div>
+            <div className="activity-meta">
+              <span className="activity-trader">{alert.trader_id}</span>
+              <span>·</span>
+              <span className={severityBadgeClass(alert.severity)}>{alert.severity}</span>
+              <span>·</span>
+              <span className="activity-time">
+                {timeAgo((alert as unknown as Record<string, string>).created_at)}
+              </span>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Widget: Risk Score Heatmap ───────────────────────────────────────────────
+
+const HEATMAP_LEGEND = [
+  { label: '≥80 Critical', color: 'rgba(244,63,94,0.6)' },
+  { label: '60-79 High',   color: 'rgba(245,158,11,0.6)' },
+  { label: '40-59 Medium', color: 'rgba(56,189,248,0.5)' },
+  { label: '<40 Low',      color: 'rgba(16,185,129,0.5)' },
+];
+
+function RiskHeatmap({ traders }: { traders: { trader_id: string; risk_score: number; open_alerts: number }[] }) {
+  if (traders.length === 0) {
+    return (
+      <div className="empty-state">
+        <div className="empty-state-icon" style={{ fontSize: '1.5rem' }}>✅</div>
+        <div className="empty-state-text">No high-risk traders</div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="heatmap-grid">
+        {traders.map((t) => (
+          <div
+            key={t.trader_id}
+            className={`heatmap-tile ${scoreClass(t.risk_score)}`}
+            title={`${t.trader_id} — score: ${t.risk_score}, alerts: ${t.open_alerts}`}
+          >
+            <span className="heatmap-score">{t.risk_score}</span>
+            <span className="heatmap-id">{t.trader_id.slice(-6)}</span>
+            <span className="heatmap-alerts">{t.open_alerts}⚑</span>
+          </div>
+        ))}
+      </div>
+      <div className="heatmap-legend">
+        {HEATMAP_LEGEND.map((l) => (
+          <div key={l.label} className="heatmap-legend-item">
+            <span className="heatmap-legend-swatch" style={{ background: l.color }} />
+            <span>{l.label}</span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default async function DashboardPage() {
   let summary: DashboardSummary | null = null;
   let recentAlerts: Alert[] = [];
   let highRiskTraders: { trader_id: string; risk_score: number; open_alerts: number }[] = [];
+  let trends: { by_severity: Record<string, number>; by_rule: Record<string, number> } = { by_severity: {}, by_rule: {} };
   let error: string | null = null;
 
   try {
-    [summary, recentAlerts, highRiskTraders] = await Promise.all([
+    [summary, recentAlerts, highRiskTraders, trends] = await Promise.all([
       fetchDashboardSummary(),
-      fetchRecentAlerts(8),
+      fetchRecentAlerts(10),
       fetchHighRiskTraders(),
+      fetchAlertTrends(),
     ]);
   } catch {
     error = 'Could not connect to the alert-case-service. Make sure the backend is running.';
@@ -101,7 +321,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Metric Cards */}
+      {/* ── Row 1: Metric Cards ── */}
       <div className="grid">
         <MetricCard
           title="Events Processed"
@@ -149,8 +369,8 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {/* Two-column: Recent Alerts + High-Risk Traders */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '1.5rem', marginBottom: '1.5rem' }}>
+      {/* ── Row 2: Recent Alerts Table + Severity Donut ── */}
+      <div className="widget-row widget-row-2">
 
         {/* Recent Alerts Table */}
         <div className="card fade-in" style={{ overflow: 'hidden' }}>
@@ -205,37 +425,41 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* High-Risk Traders Panel */}
-        <div className="card fade-in" style={{ minWidth: 260, flexShrink: 0 }}>
-          <h2 className="section-title" style={{ marginBottom: '1.25rem' }}>🔥 High-Risk Traders</h2>
-          {highRiskTraders.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-state-icon" style={{ fontSize: '1.5rem' }}>✅</div>
-              <div className="empty-state-text">No high-risk traders</div>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {highRiskTraders.map((t, i) => (
-                <div key={t.trader_id} style={{
-                  padding: '0.875rem',
-                  borderRadius: 'var(--radius-sm)',
-                  background: 'rgba(0,0,0,0.2)',
-                  border: '1px solid var(--border)',
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                    <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'monospace' }}>
-                      {t.trader_id}
-                    </span>
-                    <span style={{ color: 'var(--danger)', fontWeight: 700 }}>{t.risk_score}</span>
-                  </div>
-                  <RiskBar score={t.risk_score} severity={t.risk_score >= 80 ? 'CRITICAL' : 'HIGH'} />
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>
-                    {t.open_alerts} open alert{t.open_alerts !== 1 ? 's' : ''}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+        {/* Severity Donut */}
+        <div className="card fade-in">
+          <div className="section-header">
+            <h2 className="section-title">🎯 Alert Severity</h2>
+          </div>
+          <SeverityDonut bySeverity={trends.by_severity} />
+        </div>
+
+      </div>
+
+      {/* ── Row 3: Rule Bar Chart + Activity Feed + Risk Heatmap ── */}
+      <div className="widget-row widget-row-3">
+
+        {/* Top Triggered Rules */}
+        <div className="card fade-in">
+          <div className="section-header">
+            <h2 className="section-title">📋 Top Triggered Rules</h2>
+          </div>
+          <RuleBarChart byRule={trends.by_rule} />
+        </div>
+
+        {/* Live Activity Feed */}
+        <div className="card fade-in">
+          <div className="section-header">
+            <h2 className="section-title">⚡ Live Activity</h2>
+          </div>
+          <ActivityFeed alerts={recentAlerts} />
+        </div>
+
+        {/* Risk Score Heatmap */}
+        <div className="card fade-in">
+          <div className="section-header" style={{ marginBottom: '1rem' }}>
+            <h2 className="section-title">🔥 Risk Heatmap</h2>
+          </div>
+          <RiskHeatmap traders={highRiskTraders} />
         </div>
 
       </div>
