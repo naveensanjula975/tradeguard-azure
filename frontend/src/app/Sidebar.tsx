@@ -30,6 +30,7 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: 'Compliance & Governance',
     items: [
+      { name: 'Cases & Investigations', href: '/cases', icon: '📁', badge: '3 Open', badgeType: 'warning' },
       { name: 'Risk Rules', href: '/rules', icon: '⚖️' },
       { name: 'Audit Trail', href: '/audit', icon: '📜' },
     ],

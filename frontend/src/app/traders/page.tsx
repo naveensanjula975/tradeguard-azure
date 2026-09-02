@@ -543,6 +543,13 @@ function TraderProfileContent() {
 
             {/* Quick Hero Actions */}
             <div className="trader-hero-actions">
+              <Link
+                href={`/cases?id=CASE-2026-081`}
+                className="btn btn-primary"
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+              >
+                <span>📁</span> Active Cases
+              </Link>
               <button
                 className={`btn ${t.isWatchlisted ? 'btn-ghost' : 'btn-warning'}`}
                 onClick={() => handleToggleWatchlist(t.id)}
