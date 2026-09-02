@@ -236,8 +236,21 @@ function EntityDetailPanel({ entry, onClose, onStatusChange, onRemove }: {
         </div>
       </div>
 
+      {/* Trader Profile Link */}
+      {entry.entityType === 'TRADER' && (
+        <div style={{ marginTop: '1.25rem' }}>
+          <a
+            href={`/traders?id=${entry.entityId}`}
+            className="btn btn-primary"
+            style={{ width: '100%', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+          >
+            <span>👤</span> Inspect Trader Profile
+          </a>
+        </div>
+      )}
+
       {/* Remove */}
-      <div style={{ marginTop: '1rem' }}>
+      <div style={{ marginTop: '0.75rem' }}>
         <button className="btn btn-danger" style={{ width: '100%' }} onClick={() => onRemove(entry)}>
           🗑 Remove from Watchlist
         </button>

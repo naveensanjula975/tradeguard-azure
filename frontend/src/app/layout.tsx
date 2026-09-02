@@ -1,6 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import NavLink from './NavLink';
+import Sidebar from './Sidebar';
 import ServiceHealthWidget from './ServiceHealthWidget';
 
 export const metadata: Metadata = {
@@ -15,26 +15,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <header className="header">
-          <div className="logo">
-            <div className="logo-shield">🛡</div>
-            TradeGuard Azure
+      <body>
+        <div className="app-shell">
+          <Sidebar />
+          <div className="app-main-wrapper">
+            <main className="app-content-container">
+              {children}
+            </main>
+            <ServiceHealthWidget />
           </div>
-          <nav className="nav">
-            <NavLink href="/">Dashboard</NavLink>
-            <NavLink href="/alerts">Alerts</NavLink>
-            <NavLink href="/rules">Risk Rules</NavLink>
-            <NavLink href="/audit">Audit Trail</NavLink>
-            <NavLink href="/simulator">Simulator</NavLink>
-            <NavLink href="/watchlist">Watchlist</NavLink>
-            <NavLink href="/codegen">Code Gen</NavLink>
-          </nav>
-        </header>
-        <main className="container" style={{ flex: 1 }}>
-          {children}
-        </main>
-        <ServiceHealthWidget />
+        </div>
       </body>
     </html>
   );

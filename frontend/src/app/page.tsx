@@ -247,15 +247,17 @@ function RiskHeatmap({ traders }: { traders: { trader_id: string; risk_score: nu
     <>
       <div className="heatmap-grid">
         {traders.map((t) => (
-          <div
+          <a
             key={t.trader_id}
+            href={`/traders?id=${t.trader_id}`}
             className={`heatmap-tile ${scoreClass(t.risk_score)}`}
-            title={`${t.trader_id} — score: ${t.risk_score}, alerts: ${t.open_alerts}`}
+            title={`${t.trader_id} — score: ${t.risk_score}, alerts: ${t.open_alerts} (Click to open Trader Profile)`}
+            style={{ textDecoration: 'none', cursor: 'pointer' }}
           >
             <span className="heatmap-score">{t.risk_score}</span>
             <span className="heatmap-id">{t.trader_id.slice(-6)}</span>
             <span className="heatmap-alerts">{t.open_alerts}⚑</span>
-          </div>
+          </a>
         ))}
       </div>
       <div className="heatmap-legend">
@@ -408,7 +410,15 @@ export default async function DashboardPage() {
                           {alert.alert_id}
                         </a>
                       </td>
-                      <td className="td-secondary">{alert.trader_id}</td>
+                      <td className="td-secondary">
+                        <a
+                          href={`/traders?id=${alert.trader_id}`}
+                          style={{ color: 'var(--text-primary)', textDecoration: 'underline', textDecorationColor: 'rgba(56,189,248,0.4)' }}
+                          title={`Inspect profile for ${alert.trader_id}`}
+                        >
+                          {alert.trader_id}
+                        </a>
+                      </td>
                       <td style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {alert.title}
                       </td>
